@@ -1,0 +1,43 @@
+{
+  "entities": {
+    "Ceremony": {
+      "title": "Ceremony Builder Data",
+      "description": "The complete state of a wedding ceremony draft.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the owning user."
+        },
+        "partner1Vows": {
+          "type": "string"
+        },
+        "partner2Vows": {
+          "type": "string"
+        },
+        "brainstormNotes1": {
+          "type": "string"
+        },
+        "brainstormNotes2": {
+          "type": "string"
+        },
+        "ceremonySteps": {
+          "type": "array",
+          "description": "The ordered list of ceremony modules."
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the last edit."
+        }
+      },
+      "required": ["userId", "lastUpdated"]
+    }
+  },
+  "firestore": {
+    "/ceremonies/{userId}": {
+      "schema": "Ceremony",
+      "description": "Primary storage for a user's ceremony progress."
+    }
+  }
+}

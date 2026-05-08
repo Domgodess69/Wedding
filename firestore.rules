@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Phase 3: Primitives
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // Phase 4: Validation Blueprint
+    function isValidCeremony(data) {
+      return data.userId == request.auth.uid 
+        && data.lastUpdated == request.time
+        && data.partner1Vows is string && data.partner1Vows.size() <= 20000
+        && data.partner2Vows is string && data.partner2Vows.size() <= 20000
+        && data.brainstormNotes1 is string && data.brainstormNotes1.size() <= 20000
+        && data.brainstormNotes2 is string && data.brainstormNotes2.size() <= 20000
+        && data.ceremonySteps is list && data.ceremonySteps.size() <= 30;
+    }
+
+    match /ceremonies/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow create: if isOwner(userId) 
+        && isValidId(userId)
+        && isValidCeremony(incoming())
+        && incoming().keys().hasAll(['userId', 'partner1Vows', 'partner2Vows', 'brainstormNotes1', 'brainstormNotes2', 'ceremonySteps', 'lastUpdated'])
+        && incoming().keys().size() == 7;
+      
+      allow update: if isOwner(userId)
+        && isValidId(userId)
+        && isValidCeremony(incoming())
+        && incoming().userId == existing().userId;
+      
+      allow delete: if isOwner(userId) && isValidId(userId);
+    }
+  }
+}
